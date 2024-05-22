@@ -1,0 +1,646 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="cdr">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="自定义MyBatis插件1.实现Interceptor接口1.1 可以拦截的四个类型 Executor: 拦截执行器的方法 ParameterHandler: 拦截参数的处理 ResultHandler: 拦截结果处理集的处理 StatementHandler:拦截sql语法构建的处理  1.2 规则1.2.1 InterceptsIntercepts注解需要一个Signature参数数组。通过S">
+<meta property="og:type" content="article">
+<meta property="og:title" content="自定义MyBatis插件">
+<meta property="og:url" content="http://example.com/article/mybatis-plugins/index.html">
+<meta property="og:site_name" content="cdrblog">
+<meta property="og:description" content="自定义MyBatis插件1.实现Interceptor接口1.1 可以拦截的四个类型 Executor: 拦截执行器的方法 ParameterHandler: 拦截参数的处理 ResultHandler: 拦截结果处理集的处理 StatementHandler:拦截sql语法构建的处理  1.2 规则1.2.1 InterceptsIntercepts注解需要一个Signature参数数组。通过S">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-05-22T02:12:58.652Z">
+<meta property="article:modified_time" content="2023-08-17T08:49:33.291Z">
+<meta property="article:author" content="cdr">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>自定义MyBatis插件 - cdrblog</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_hj8rtnfg7um.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_lbnruvf0jn.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.4","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false}},"search_path":"/local-search.xml"};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 5.4.1"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="自定义MyBatis插件"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2024-05-22 10:12" pubdate>
+          2024年5月22日 上午
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          8.1k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          68 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">自定义MyBatis插件</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="自定义MyBatis插件"><a href="#自定义MyBatis插件" class="headerlink" title="自定义MyBatis插件"></a>自定义MyBatis插件</h1><h2 id="1-实现Interceptor接口"><a href="#1-实现Interceptor接口" class="headerlink" title="1.实现Interceptor接口"></a>1.实现Interceptor接口</h2><h3 id="1-1-可以拦截的四个类型"><a href="#1-1-可以拦截的四个类型" class="headerlink" title="1.1 可以拦截的四个类型"></a>1.1 可以拦截的四个类型</h3><ul>
+<li>Executor: 拦截执行器的方法</li>
+<li>ParameterHandler: 拦截参数的处理</li>
+<li>ResultHandler: 拦截结果处理集的处理</li>
+<li>StatementHandler:拦截sql语法构建的处理</li>
+</ul>
+<h3 id="1-2-规则"><a href="#1-2-规则" class="headerlink" title="1.2 规则"></a>1.2 规则</h3><h4 id="1-2-1-Intercepts"><a href="#1-2-1-Intercepts" class="headerlink" title="1.2.1 Intercepts"></a>1.2.1 Intercepts</h4><p>Intercepts注解需要一个Signature参数数组。通过Signature来指定拦截哪个对象里面的哪个方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java"><br><span class="hljs-meta">@Documented</span><br><span class="hljs-meta">@Retention</span><br><span class="hljs-meta">@Target(ElementType.TYPE)</span><br><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> Intercepts &#123;<br>    Signature[] value();<br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+
+<h4 id="1-2-2-Signature"><a href="#1-2-2-Signature" class="headerlink" title="1.2.2 Signature"></a>1.2.2 Signature</h4><p>Signature来指定需要拦截哪个对象的哪个方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Documented</span><br><span class="hljs-meta">@Retention</span><br><span class="hljs-meta">@Target(ElementType.TYPE)</span><br><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> Signature &#123;<br>    <span class="hljs-comment">// 拦截的四个类</span><br>    class&lt;?&gt; type();<br>    <span class="hljs-comment">// 拦截的类的方法</span><br>    String <span class="hljs-title function_">method</span><span class="hljs-params">()</span>;<br>    <span class="hljs-comment">// 拦截的类的方法的参数，方法有重载，注意参数类型和顺序</span><br>    Class&lt;?&gt; args();<br>&#125;<br><br><br></code></pre></td></tr></table></figure>
+
+
+
+<h4 id="1-2-3-注解的使用"><a href="#1-2-3-注解的使用" class="headerlink" title="1.2.3 注解的使用"></a>1.2.3 注解的使用</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Intercepts(&#123;</span><br><span class="hljs-meta">        @Signature(type = Executor.class, method = &quot;query&quot;,</span><br><span class="hljs-meta">                args = &#123;MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class, CacheKey.class, BoundSql.class&#125;),</span><br><span class="hljs-meta">        @Signature(type = Executor.class, method = &quot;query&quot;,</span><br><span class="hljs-meta">                args = &#123;MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class&#125;),</span><br><span class="hljs-meta">        @Signature(type = Executor.class, method = &quot;update&quot;, args = &#123;MappedStatement.class, Object.class&#125;),</span><br><span class="hljs-meta">&#125;)</span><br></code></pre></td></tr></table></figure>
+
+
+
+<h4 id="1-2-4-实现Interceptor"><a href="#1-2-4-实现Interceptor" class="headerlink" title="1.2.4 实现Interceptor"></a>1.2.4 实现Interceptor</h4><p>实现<code>org.apache.ibatis.plugin.Interceptor</code>，再重新下面的三个方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">Interceptor</span> &#123;<br>    Object <span class="hljs-title function_">intercept</span><span class="hljs-params">(Invocation invocation)</span> <span class="hljs-keyword">throws</span> Throwable;<br><br>    <span class="hljs-keyword">default</span> Object <span class="hljs-title function_">plugin</span><span class="hljs-params">(Object target)</span> &#123;<br>        <span class="hljs-keyword">return</span> Plugin.wrap(target, <span class="hljs-built_in">this</span>);<br>    &#125;<br><br>    <span class="hljs-keyword">default</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">setProperties</span><span class="hljs-params">(Properties properties)</span> &#123;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+
+
+
+<h3 id="1-3-实战"><a href="#1-3-实战" class="headerlink" title="1.3 实战"></a>1.3 实战</h3><h4 id="1-3-1-自定义超时sql写入日志插件"><a href="#1-3-1-自定义超时sql写入日志插件" class="headerlink" title="1.3.1 自定义超时sql写入日志插件"></a>1.3.1 自定义超时sql写入日志插件</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br></pre></td><td class="code"><pre><code class="hljs java"><br><span class="hljs-keyword">package</span> com.cdr.java.plugins;<br><br><span class="hljs-keyword">import</span> lombok.extern.slf4j.Slf4j;<br><span class="hljs-keyword">import</span> org.apache.ibatis.cache.CacheKey;<br><span class="hljs-keyword">import</span> org.apache.ibatis.executor.Executor;<br><br><span class="hljs-keyword">import</span> org.apache.ibatis.mapping.BoundSql;<br><span class="hljs-keyword">import</span> org.apache.ibatis.mapping.MappedStatement;<br><span class="hljs-keyword">import</span> org.apache.ibatis.mapping.ParameterMapping;<br><span class="hljs-keyword">import</span> org.apache.ibatis.plugin.Interceptor;<br><span class="hljs-keyword">import</span> org.apache.ibatis.plugin.Intercepts;<br><span class="hljs-keyword">import</span> org.apache.ibatis.plugin.Invocation;<br><span class="hljs-keyword">import</span> org.apache.ibatis.plugin.Signature;<br><span class="hljs-keyword">import</span> org.apache.ibatis.reflection.MetaObject;<br><span class="hljs-keyword">import</span> org.apache.ibatis.session.Configuration;<br><span class="hljs-keyword">import</span> org.apache.ibatis.session.ResultHandler;<br><span class="hljs-keyword">import</span> org.apache.ibatis.session.RowBounds;<br><span class="hljs-keyword">import</span> org.apache.ibatis.type.TypeHandlerRegistry;<br><span class="hljs-keyword">import</span> org.springframework.stereotype.Component;<br><br><span class="hljs-keyword">import</span> java.lang.reflect.Method;<br><br><span class="hljs-keyword">import</span> java.text.DateFormat;<br><span class="hljs-keyword">import</span> java.util.Date;<br><span class="hljs-keyword">import</span> java.util.List;<br><span class="hljs-keyword">import</span> java.util.Locale;<br><span class="hljs-keyword">import</span> java.util.Properties;<br><br><span class="hljs-comment">/**</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@ClassName</span> MybatisTestPlugins</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@Description</span> 自定义mybatis插件</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@Author</span> caodengrui</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@Date</span> 2023/8/16 14:23</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@Email</span> 592184316@qq.com</span><br><span class="hljs-comment"> * <span class="hljs-doctag">@Version</span> 1.0</span><br><span class="hljs-comment"> **/</span><br><br><span class="hljs-meta">@Intercepts(&#123;</span><br><span class="hljs-meta">        @Signature(type = Executor.class, method = &quot;query&quot;,</span><br><span class="hljs-meta">                args = &#123;MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class, CacheKey.class, BoundSql.class&#125;),</span><br><span class="hljs-meta">        @Signature(type = Executor.class, method = &quot;query&quot;,</span><br><span class="hljs-meta">                args = &#123;MappedStatement.class, Object.class, RowBounds.class, ResultHandler.class&#125;),</span><br><span class="hljs-meta">        @Signature(type = Executor.class, method = &quot;update&quot;, args = &#123;MappedStatement.class, Object.class&#125;),</span><br><span class="hljs-meta">&#125;)</span><br><br><span class="hljs-comment">/*@Intercepts(&#123;</span><br><span class="hljs-comment"></span><br><span class="hljs-comment">        @Signature(type = StatementHandler.class, method = &quot;prepare&quot;,args = &#123;Connection.class,Integer.class&#125;)</span><br><span class="hljs-comment">&#125;)*/</span><br><span class="hljs-meta">@Component</span><br><span class="hljs-meta">@Slf4j</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MybatisTestPlugins</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Interceptor</span> &#123;<br><br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> Object <span class="hljs-title function_">intercept</span><span class="hljs-params">(Invocation invocation)</span> <span class="hljs-keyword">throws</span> Throwable &#123;<br><br>        <span class="hljs-comment">// 方法执行前拦截 do something...</span><br>        <span class="hljs-type">Object</span> <span class="hljs-variable">target</span> <span class="hljs-operator">=</span> invocation.getTarget(); <span class="hljs-comment">// 被代理对象</span><br>        <span class="hljs-type">Method</span> <span class="hljs-variable">method</span> <span class="hljs-operator">=</span> invocation.getMethod(); <span class="hljs-comment">// 代理方法</span><br>        Object[] args = invocation.getArgs(); <span class="hljs-comment">// 方法参数</span><br><br><br>        <span class="hljs-comment">// 获取执行方法的MappedStatement参数</span><br>        <span class="hljs-type">MappedStatement</span> <span class="hljs-variable">mappedStatement</span> <span class="hljs-operator">=</span> (MappedStatement) invocation.getArgs()[<span class="hljs-number">0</span>];<br>        <span class="hljs-type">Object</span> <span class="hljs-variable">parameter</span> <span class="hljs-operator">=</span> <span class="hljs-literal">null</span>;<br>        <span class="hljs-keyword">if</span> (invocation.getArgs().length &gt; <span class="hljs-number">1</span>) &#123;<br>            parameter = invocation.getArgs()[<span class="hljs-number">1</span>];<br>        &#125;<br>        <span class="hljs-type">String</span> <span class="hljs-variable">sqlId</span> <span class="hljs-operator">=</span> mappedStatement.getId();<br>        <span class="hljs-type">BoundSql</span> <span class="hljs-variable">boundSql</span> <span class="hljs-operator">=</span> mappedStatement.getBoundSql(parameter);<br>        <span class="hljs-type">Configuration</span> <span class="hljs-variable">configuration</span> <span class="hljs-operator">=</span> mappedStatement.getConfiguration();<br>        <span class="hljs-comment">// 替换过参数后的sql</span><br>        <span class="hljs-type">String</span> <span class="hljs-variable">fullSql</span> <span class="hljs-operator">=</span> getFullSql(configuration, boundSql);<br><br>        <span class="hljs-type">Object</span> <span class="hljs-variable">result</span> <span class="hljs-operator">=</span> <span class="hljs-literal">null</span>;<br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-type">Long</span> <span class="hljs-variable">startTime</span> <span class="hljs-operator">=</span> System.currentTimeMillis();<br>            result = invocation.proceed();  <span class="hljs-comment">// 执行</span><br>            <br>            <span class="hljs-comment">// 方法执行后拦截 do something...</span><br>            <span class="hljs-type">Long</span> <span class="hljs-variable">endTime</span> <span class="hljs-operator">=</span> System.currentTimeMillis();<br>            <span class="hljs-comment">// sql执行时间</span><br>            <span class="hljs-type">Long</span> <span class="hljs-variable">executeTime</span> <span class="hljs-operator">=</span> endTime - startTime;<br>            <span class="hljs-comment">// 超过5s</span><br>            <span class="hljs-keyword">if</span> (executeTime &gt; <span class="hljs-number">5</span>*<span class="hljs-number">1000</span>) &#123;<br>                log.info(<span class="hljs-string">&quot;SQL执行时间过长&quot;</span>);<br>                log.info(<span class="hljs-string">&quot;SQL语句:&#123;&#125;&quot;</span>,fullSql);<br>                log.info(<span class="hljs-string">&quot;SQL执行时间:&#123;&#125;ms&quot;</span>,executeTime);<br>                <span class="hljs-comment">// 在这里可以发邮件通知一下</span><br>            &#125;<br>        &#125;<span class="hljs-keyword">catch</span> (Exception e) &#123;<br>            log.error(<span class="hljs-string">&quot;SQL异常：&quot;</span>+e);<br>            log.info(<span class="hljs-string">&quot;SQL语句：&#123;&#125;&quot;</span>,fullSql);<br>            <span class="hljs-comment">// 在这里可以发邮件通知一下</span><br>        &#125;<br><br>        <span class="hljs-keyword">return</span> result;<br>    &#125;<br><br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     *  决定要返回对象是目标对象还是对应的代理对象</span><br><span class="hljs-comment">     *  一般两种情况：</span><br><span class="hljs-comment">     *  1. return target: 直接返回目标对象，当前Interceptor没起作用，不会调用上面的intercept()方法</span><br><span class="hljs-comment">     *  2. return Plugin.wrap(target,this): 返回代理对象，会调用上面的intercept()方法</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> Object <span class="hljs-title function_">plugin</span><span class="hljs-params">(Object target)</span> &#123;<br>        <span class="hljs-keyword">return</span> Interceptor.<span class="hljs-built_in">super</span>.plugin(target);<br>    &#125;<br><br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">setProperties</span><span class="hljs-params">(Properties properties)</span> &#123;<br><br>    &#125;<br><br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 转义正则特殊字符 （$()*+.[]?\^&#123;&#125;</span><br><span class="hljs-comment">     * \\需要第一个替换，否则replace方法替换时会有逻辑bug</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String <span class="hljs-title function_">makeQueryStringAllRegExp</span><span class="hljs-params">(String str)</span> &#123;<br>        <span class="hljs-keyword">if</span> (str != <span class="hljs-literal">null</span> &amp;&amp; !<span class="hljs-string">&quot;&quot;</span>.equals(str)) &#123;<br>            <span class="hljs-keyword">return</span> str.replace(<span class="hljs-string">&quot;\\&quot;</span>, <span class="hljs-string">&quot;\\\\&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;*&quot;</span>, <span class="hljs-string">&quot;\\*&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;+&quot;</span>, <span class="hljs-string">&quot;\\+&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;|&quot;</span>, <span class="hljs-string">&quot;\\|&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;&#123;&quot;</span>, <span class="hljs-string">&quot;\\&#123;&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;&#125;&quot;</span>, <span class="hljs-string">&quot;\\&#125;&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;(&quot;</span>, <span class="hljs-string">&quot;\\(&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;)&quot;</span>, <span class="hljs-string">&quot;\\)&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;^&quot;</span>, <span class="hljs-string">&quot;\\^&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;$&quot;</span>, <span class="hljs-string">&quot;\\$&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;[&quot;</span>, <span class="hljs-string">&quot;\\[&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;]&quot;</span>, <span class="hljs-string">&quot;\\]&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;?&quot;</span>, <span class="hljs-string">&quot;\\?&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;,&quot;</span>, <span class="hljs-string">&quot;\\,&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;.&quot;</span>, <span class="hljs-string">&quot;\\.&quot;</span>)<br>                    .replace(<span class="hljs-string">&quot;&amp;&quot;</span>, <span class="hljs-string">&quot;\\&amp;&quot;</span>);<br>        &#125;<br>        <span class="hljs-keyword">return</span> str;<br>    &#125;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 获取参数对应的string值</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> obj 参数对应的值</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@return</span> string</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String <span class="hljs-title function_">getParameterValue</span><span class="hljs-params">(Object obj)</span> &#123;<br>        String value;<br>        <span class="hljs-keyword">if</span> (obj <span class="hljs-keyword">instanceof</span> String) &#123;<br>            value = <span class="hljs-string">&quot;&#x27;&quot;</span> + obj + <span class="hljs-string">&quot;&#x27;&quot;</span>;<br>        &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (obj <span class="hljs-keyword">instanceof</span> Date) &#123;<br>            <span class="hljs-type">DateFormat</span> <span class="hljs-variable">formatter</span> <span class="hljs-operator">=</span><br>                    DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.CHINA);<br>            value = <span class="hljs-string">&quot;&#x27;&quot;</span> + formatter.format(obj) + <span class="hljs-string">&quot;&#x27;&quot;</span>;<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            <span class="hljs-keyword">if</span> (obj != <span class="hljs-literal">null</span>) &#123;<br>                value = obj.toString();<br>            &#125; <span class="hljs-keyword">else</span> &#123;<br>                value = <span class="hljs-string">&quot;&quot;</span>;<br>            &#125;<br>        &#125;<br>        <span class="hljs-comment">// 对特殊字符进行转义，方便之后处理替换</span><br>        <span class="hljs-keyword">return</span> value != <span class="hljs-literal">null</span> ? makeQueryStringAllRegExp(value) : <span class="hljs-string">&quot;&quot;</span>;<br>    &#125;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 获取完整的执行SQL</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> String <span class="hljs-title function_">getFullSql</span><span class="hljs-params">(Configuration configuration, BoundSql boundSql)</span> &#123;<br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-keyword">return</span> parseAndExtractFullSql(configuration, boundSql);<br>        &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>            <span class="hljs-comment">// 如果解析失败返回原始SQL</span><br>            <span class="hljs-keyword">return</span> boundSql.getSql();<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-comment">/**</span><br><span class="hljs-comment">     * 组装完整的sql语句并把把对应的参数都代入到sql语句里面</span><br><span class="hljs-comment">     *</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> configuration Configuration</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@param</span> boundSql      BoundSql</span><br><span class="hljs-comment">     * <span class="hljs-doctag">@return</span> sql完整语句</span><br><span class="hljs-comment">     */</span><br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> String <span class="hljs-title function_">parseAndExtractFullSql</span><span class="hljs-params">(Configuration configuration, BoundSql boundSql)</span> &#123;<br>        <span class="hljs-comment">// 获取mapper里面方法上的参数</span><br>        <span class="hljs-type">Object</span> <span class="hljs-variable">sqlParameter</span> <span class="hljs-operator">=</span> boundSql.getParameterObject();<br>        <span class="hljs-comment">// sql语句里面需要的参数</span><br>        List&lt;ParameterMapping&gt; parameterMappings = boundSql.getParameterMappings();<br>        <span class="hljs-comment">// sql原始语句(?还没有替换成我们具体的参数)</span><br>        <span class="hljs-type">String</span> <span class="hljs-variable">sql</span> <span class="hljs-operator">=</span> boundSql.getSql().replaceAll(<span class="hljs-string">&quot;[\\s]+&quot;</span>, <span class="hljs-string">&quot; &quot;</span>);<br>        <span class="hljs-keyword">if</span> (!parameterMappings.isEmpty() &amp;&amp; sqlParameter != <span class="hljs-literal">null</span>) &#123;<br>            <span class="hljs-comment">// sql语句里面的?替换成真实的参数</span><br>            <span class="hljs-type">TypeHandlerRegistry</span> <span class="hljs-variable">typeHandlerRegistry</span> <span class="hljs-operator">=</span> configuration.getTypeHandlerRegistry();<br>            <span class="hljs-keyword">if</span> (typeHandlerRegistry.hasTypeHandler(sqlParameter.getClass())) &#123;<br>                sql = sql.replaceFirst(<span class="hljs-string">&quot;\\?&quot;</span>, getParameterValue(sqlParameter));<br>            &#125; <span class="hljs-keyword">else</span> &#123;<br>                <span class="hljs-type">MetaObject</span> <span class="hljs-variable">metaObject</span> <span class="hljs-operator">=</span> configuration.newMetaObject(sqlParameter);<br>                <span class="hljs-keyword">for</span> (ParameterMapping parameterMapping : parameterMappings) &#123;<br>                    <span class="hljs-comment">// 按顺序把?替换成对应的值</span><br>                    <span class="hljs-type">String</span> <span class="hljs-variable">propertyName</span> <span class="hljs-operator">=</span> parameterMapping.getProperty();<br>                    <span class="hljs-keyword">if</span> (metaObject.hasGetter(propertyName)) &#123;<br>                        <span class="hljs-type">Object</span> <span class="hljs-variable">obj</span> <span class="hljs-operator">=</span> metaObject.getValue(propertyName);<br>                        sql = sql.replaceFirst(<span class="hljs-string">&quot;\\?&quot;</span>, getParameterValue(obj));<br>                    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (boundSql.hasAdditionalParameter(propertyName)) &#123;<br>                        <span class="hljs-type">Object</span> <span class="hljs-variable">obj</span> <span class="hljs-operator">=</span> boundSql.getAdditionalParameter(propertyName);<br>                        sql = sql.replaceFirst(<span class="hljs-string">&quot;\\?&quot;</span>, getParameterValue(obj));<br>                    &#125;<br>                &#125;<br>            &#125;<br>        &#125;<br>        <span class="hljs-keyword">return</span> sql;<br>    &#125;<br><br><br>&#125;<br><br><br></code></pre></td></tr></table></figure>
+
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>自定义MyBatis插件</div>
+      <div>http://example.com/article/mybatis-plugins/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>cdr</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2024年5月22日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/article/mysql-json/" title="mysql中对json类型字段的处理">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">mysql中对json类型字段的处理</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/article/minio/" title="分布式文件存储Minio">
+                        <span class="hidden-mobile">分布式文件存储Minio</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.0/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.18.2/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/4.3.1/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
