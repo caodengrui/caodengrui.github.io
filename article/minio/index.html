@@ -24,7 +24,7 @@
 <meta property="og:description" content="Minio1. Minio应用场景适合存储大容量非结构化的数据，例如图片、视频、日志文件、备份数据和容器虚拟机镜像等。 1.1 Minio的基础概念 Object: 存储到Minio的基本对象，如文件、字节流 Bucket：用来存储Object的逻辑空间。每个Bucket之间的数据是相互隔离的。 Drive：存储数据的磁盘，在Minio启动时，以参数的方式传入，所有数据对象都会存储在Drive里。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2024-05-22T02:12:58.650Z">
-<meta property="article:modified_time" content="2024-07-29T08:32:33.763Z">
+<meta property="article:modified_time" content="2024-11-12T09:12:04.192Z">
 <meta property="article:author" content="cdr">
 <meta name="twitter:card" content="summary_large_image">
   
@@ -219,7 +219,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          15k 字
+          16k 字
         
       </span>
     
@@ -230,7 +230,7 @@
         
         
         
-          124 分钟
+          132 分钟
         
       </span>
     
@@ -353,6 +353,30 @@
 
 
 
+<h2 id="5-linux备份迁移minio"><a href="#5-linux备份迁移minio" class="headerlink" title="5.linux备份迁移minio"></a>5.linux备份迁移minio</h2><h3 id="5-1下载Minio-Client"><a href="#5-1下载Minio-Client" class="headerlink" title="5.1下载Minio Client"></a>5.1下载Minio Client</h3><p>有101和102两个服务器，只需要在一个服务器下载</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs shell">wget https://dl.min.io/client/mc/release/linux-amd64/mc<br>chmod +x mc<br>mv mc /usr/local/bin/mc<br></code></pre></td></tr></table></figure>
+
+<h3 id="5-2测试mc"><a href="#5-2测试mc" class="headerlink" title="5.2测试mc"></a>5.2测试mc</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs shell">mc --version<br><span class="hljs-meta"># </span><span class="language-bash">如果没有任何输出用这个命令 mc --version 2&gt;&amp;1 | <span class="hljs-built_in">tee</span> output.txt</span><br></code></pre></td></tr></table></figure>
+
+<p>mc命令执行后如果没有输出，就在命令后面加上<code>2&gt;&amp;1 | tee output.txt</code></p>
+<p>mc常用命令</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta"># </span><span class="language-bash">查看版本</span><br>mc --version<br><span class="hljs-meta"># </span><span class="language-bash">给minio服务设置别名</span><br>mc alias set minio101 http://192.168.1.101:9000 admin admin123456<br><span class="hljs-meta"># </span><span class="language-bash">查看已设置的别名</span><br>mc alias list<br><span class="hljs-meta"># </span><span class="language-bash">查看minio的bucket</span><br>mc ls minio101<br></code></pre></td></tr></table></figure>
+
+
+
+<h3 id="5-3准备备份"><a href="#5-3准备备份" class="headerlink" title="5.3准备备份"></a>5.3准备备份</h3><h4 id="5-3-1准备好两个minio服务"><a href="#5-3-1准备好两个minio服务" class="headerlink" title="5.3.1准备好两个minio服务"></a>5.3.1准备好两个minio服务</h4><p>例如有192.168.1.101 和192.168.1.102两个服务，要把101的test这个bucket备份迁移到102中。</p>
+<p>先在102的minio服务中创建好test的bucket</p>
+<h4 id="5-3-2给两个服务起别名"><a href="#5-3-2给两个服务起别名" class="headerlink" title="5.3.2给两个服务起别名"></a>5.3.2给两个服务起别名</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs shell">mc alias set minio101 http://192.168.1.101:9000 admin admin123456<br>mc alias set minio102 http://192.168.1.101:9000 admin admin123456<br><span class="hljs-meta"></span><br><span class="hljs-meta"></span><br><span class="hljs-meta"># </span><span class="language-bash">设置成功后，查看已设置的别名</span><br>mc alias list<br></code></pre></td></tr></table></figure>
+
+<h4 id="5-3-3备份迁移"><a href="#5-3-3备份迁移" class="headerlink" title="5.3.3备份迁移"></a>5.3.3备份迁移</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta"># </span><span class="language-bash">迁移所有桶,重名文件不覆盖，bucket不存在会自动创建</span><br>mc mirror minio101 minio102<br><span class="hljs-meta"></span><br><span class="hljs-meta"># </span><span class="language-bash">迁移一个桶，102的bucket需要提前创建好</span><br>mc mirror minio101/test minio102/test<br><span class="hljs-meta"># </span><span class="language-bash">覆盖重名文件</span><br>mc mirror --overwirte minio101/test minio102/test<br></code></pre></td></tr></table></figure>
+
+<h4 id="5-4-4定时备份"><a href="#5-4-4定时备份" class="headerlink" title="5.4.4定时备份"></a>5.4.4定时备份</h4><p>用linux的crontab</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta"># </span><span class="language-bash">查看定时任务列表</span><br>crontab -l<br><span class="hljs-meta"># </span><span class="language-bash">新增</span><br>crontab -e<br></code></pre></td></tr></table></figure>
+
+<p>crontab -e</p>
+<p>在打开的编辑器中输入</p>
+<p>0 2 * * *    mc mirror –overwirte minio101/test minio102/test</p>
+<p>表示每天凌晨2点0分执行</p>
 
                 
               </div>
